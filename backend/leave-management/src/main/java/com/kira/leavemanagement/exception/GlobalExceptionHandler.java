@@ -64,6 +64,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAll(
             Exception e, HttpServletRequest req) {
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Something went wrong", req);
+                e.getMessage(), req);
     }
 }

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kira.leavemanagement.request_bodies.Auth;
+import com.kira.leavemanagement.request_bodies.AuthRequest.Login;
 import com.kira.leavemanagement.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +22,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> Login(@RequestBody Auth.Login req,HttpServletResponse response){
+    public ResponseEntity<?> Login(@RequestBody Login req,HttpServletResponse response){
         return service.Login(req.getMail(), req.getPassword(),response);
 
     }

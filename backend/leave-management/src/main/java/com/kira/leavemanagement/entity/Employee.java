@@ -12,13 +12,14 @@ import lombok.Data;
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer employee_id;
+    private Integer id;
     private String name;
     private String mail;
     private String hashed_password;
     @Column(name="phone_number")
     private String phoneNumber;
-    private Integer manager_id;
+    @Column(name = "manager_id")
+    private Integer managerId;
     private Integer session_version=0;
     public Employee(){};
     public Employee(String empName,String mail,String hashed_password,String phone_number,Integer manager_id){
@@ -26,7 +27,7 @@ public class Employee {
         this.mail=mail;
         this.hashed_password=hashed_password;
         this.phoneNumber=phone_number;
-        this.manager_id=manager_id;
+        this.managerId=manager_id;
         this.session_version=0;
     }
     

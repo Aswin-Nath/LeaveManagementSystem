@@ -38,7 +38,7 @@ public class AuthUtil {
 
     public String getAccessToken(Employee emp){
         return Jwts.builder()
-        .setSubject(emp.getEmployee_id().toString())
+        .setSubject(emp.getId().toString())
         .setExpiration(new Date(System.currentTimeMillis()+accessLife*1000L))
         .setIssuedAt(new Date())
         .claim("session_version",emp.getSession_version())
@@ -47,7 +47,7 @@ public class AuthUtil {
     }
     public String getRefreshToken(Employee emp){
         return Jwts.builder()
-        .setSubject(emp.getEmployee_id().toString())
+        .setSubject(emp.getId().toString())
         .setExpiration(new Date(System.currentTimeMillis()+refreshLife*1000L))
         .setIssuedAt(new Date())
         .claim("session_version",emp.getSession_version())

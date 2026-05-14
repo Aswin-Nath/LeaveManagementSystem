@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import lombok.Data;
 
 @Data
-public class IndividualLeave {
+public class IndividualDate {
     private LocalDate date;  
-    private String type;
+    private Boolean isPaid;
 }

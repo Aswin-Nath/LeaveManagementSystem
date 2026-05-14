@@ -17,7 +17,7 @@ public class EmployeeLeaves {
     @Column(name="emp_id")
     private Integer EmpId;
 
-    @Column(name="allowed_paid_leavs")
+    @Column(name="allowed_paid_leaves")
     private Integer AllowedPaidLeaves;
 
     @Column(name="rem_paid_leaves")
@@ -28,4 +28,5 @@ public class EmployeeLeaves {
     @JoinColumn(name="emp_id",referencedColumnName = "id")
     private Employee employee;
 
+    public EmployeeLeaves(){}
 }
