@@ -15,6 +15,7 @@ import com.kira.leavemanagement.entity.Leaves;
 import com.kira.leavemanagement.request_bodies.EmployeeRequest.CreateEmployee;
 import com.kira.leavemanagement.request_bodies.EmployeeRequest.UpdateQuota;
 import com.kira.leavemanagement.request_bodies.ProcessLeave.LeaveFilterReq;
+import com.kira.leavemanagement.request_bodies.ProcessLeave.Update;
 import com.kira.leavemanagement.response_bodies.EmployeeDetails.EmployeeView.Info;
 import com.kira.leavemanagement.response_bodies.EmployeeDetails.EmployeeView.LeaveQuota;
 import com.kira.leavemanagement.response_bodies.EmployeeDetails.ManagerView.IndividualEmployeeDetails;
@@ -49,6 +50,10 @@ public class ManagerController {
     @GetMapping("/leave/{leave_id}")
     public IndividualLeaveDetails getLeaveDetails(@PathVariable Integer leave_id){
         return managerService.getLeaveDetails(leave_id);
+    }
+    @PutMapping("/leave/{leave_id}")
+    public IndividualLeaveDetails updateLeave(@PathVariable Integer leave_id, @RequestBody Update req){
+        return managerService.updateLeave(leave_id, req.getApproval_status(), req.getComments());
     }
     @GetMapping("/leave")
     public List<LeaveFilter> getLeaves(@ModelAttribute LeaveFilterReq filter){

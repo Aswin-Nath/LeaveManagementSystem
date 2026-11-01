@@ -32,31 +32,35 @@ public class ManagerService {
     private final EmployeeRepository empRepo;
     private final EmployeeLeavesRepository empLeaveRepo;
     private final LeavesRepository leaveRepo;
+    private final EmployeeAccessService employeeAccessService;
     @Autowired
     private BCryptPasswordEncoder encoder;
 
-    public ManagerService(EmployeeRepository repo,EmployeeLeavesRepository empLeaveRepo,LeavesRepository leaveRepo){
+    public ManagerService(EmployeeRepository repo,EmployeeLeavesRepository empLeaveRepo,LeavesRepository leaveRepo,
+            EmployeeAccessService employeeAccessService){
         this.empRepo=repo;
         this.empLeaveRepo=empLeaveRepo;
         this.leaveRepo=leaveRepo;
+        this.employeeAccessService = employeeAccessService;
     }
     public EmployeeLeaves createEmployeeLeaves(Employee emp,Integer paidDays){
         EmployeeLeaves empLeaves = new EmployeeLeaves();
         empLeaves.setEmployee(emp);
-        empLeaves.setRemPaidLeaves(paidDays);
         empLeaves.setAllowedPaidLeaves(paidDays);
+        empLeaves.setUsedPaidLeaves(0);
         empLeaveRepo.save(empLeaves);
         return empLeaves;
     }
 
     public List<IndividualEmployeeDetails> getAll(){
         Integer loggedInUserID = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        employeeAccessService.requireManager(loggedInUserID);
 
         List<Employee> employees=  empRepo.findByManagerId(loggedInUserID);
         List<IndividualEmployeeDetails> employeeLeavesResponses = new ArrayList<>();
         for(Employee emp:employees){
             EmployeeLeaves employeeLeaves = empLeaveRepo.findById(emp.getId()).orElseThrow();
-            employeeLeavesResponses.add(new IndividualEmployeeDetails(emp.getId(), emp.getName(), emp.getMail(), emp.getPhoneNumber(), employeeLeaves.getRemPaidLeaves(), employeeLeaves.getAllowedPaidLeaves()));
+            employeeLeavesResponses.add(new IndividualEmployeeDetails(emp.getId(), emp.getName(), emp.getMail(), emp.getPhoneNumber(), employeeLeaves.getUsedPaidLeaves(), employeeLeaves.getAllowedPaidLeaves()));
         }
         return employeeLeavesResponses;
     }
@@ -85,28 +89,66 @@ public class ManagerService {
             throw new RuntimeException("Only Employees manager can update their team members");
         }
         empLeaves.setAllowedPaidLeaves(paidDays);
-        empLeaves.setRemPaidLeaves(paidDays);
         empLeaveRepo.save(empLeaves);
-        return new LeaveQuota(paidDays,paidDays);
+        return new LeaveQuota(empLeaves.getUsedPaidLeaves(), paidDays);
     }
 
     public IndividualLeaveDetails getLeaveDetails(Integer leave_id){
         Integer loggedInUserID = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Leaves leave = leaveRepo.findById(leave_id).orElseThrow(()-> new RuntimeException("No leave found"));
         Employee emp = leave.getEmployee();
-        Integer managerId = emp.getManagerId();
-        if(!loggedInUserID.equals(managerId)){
-            throw new UnAuthorizedException("you dont have access to this");
-        }
+        employeeAccessService.requireManagerChain(emp.getId(), loggedInUserID);
         return new IndividualLeaveDetails(leave);
     }
+
+    @Transactional
+    public IndividualLeaveDetails updateLeave(Integer leaveId, String approvalStatus, String comments) {
+        Integer loggedInUserId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Leaves leave = leaveRepo.findById(leaveId)
+                .orElseThrow(() -> new RuntimeException("No leave found"));
+        employeeAccessService.requireManagerChain(leave.getEmployee().getId(), loggedInUserId);
+
+        String decision = approvalStatus == null ? "" : approvalStatus.trim().toUpperCase();
+        if (!decision.equals("ACCEPT") && !decision.equals("REJECT")) {
+            throw new IllegalArgumentException("Approval status must be ACCEPT or REJECT");
+        }
+        if (!"PENDING".equalsIgnoreCase(leave.getApprovalStatus())) {
+            throw new IllegalArgumentException("This leave request has already been processed");
+        }
+
+        if (decision.equals("ACCEPT")) {
+            EmployeeLeaves quota = empLeaveRepo.findById(leave.getEmployee().getId())
+                    .orElseThrow(() -> new RuntimeException("Quota not found"));
+            int paidDays = (int) leave.getDates().stream()
+                    .filter(date -> Boolean.TRUE.equals(date.getIsPaid()))
+                    .count();
+            int availablePaidDays = quota.getAllowedPaidLeaves() - quota.getUsedPaidLeaves();
+            if (paidDays > availablePaidDays) {
+                throw new IllegalArgumentException("Employee does not have enough paid leave quota");
+            }
+            quota.setUsedPaidLeaves(quota.getUsedPaidLeaves() + paidDays);
+            empLeaveRepo.save(quota);
+        }
+
+        leave.setApprovalStatus(decision);
+        leave.setComments(comments == null ? "" : comments.trim());
+        leave.setApprover(empRepo.findById(loggedInUserId)
+                .orElseThrow(() -> new RuntimeException("Approver not found")));
+        return new IndividualLeaveDetails(leaveRepo.save(leave));
+    }
     public List<LeaveFilter> getLeaves(LeaveFilterReq filter){
+        Integer loggedInUserId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        employeeAccessService.requireManager(loggedInUserId);
+
         String status = filter.getStatus();
         LocalDate fromDate = filter.getFromDate();
         LocalDate endDate = filter.getEndDate();
         LocalDate appliedFrom = filter.getAppliedFrom();
         LocalDate appliedTo = filter.getAppliedTo();
         Integer empId = filter.getEmpId();
+        if (empId != null) {
+            employeeAccessService.requireManagerChain(empId, loggedInUserId);
+        }
         System.out.println("status "+status+" fromDate "+fromDate+" endDate "+endDate+" appliedFrom "+appliedFrom+" appliedTo "+appliedTo);
 
         List<Leaves> allLeaves  = new ArrayList<>();
@@ -126,6 +168,8 @@ public class ManagerService {
             spec = spec.and((root,q,cb)->cb.lessThanOrEqualTo(root.get("appliedOn"), appliedTo));
         }
         allLeaves = leaveRepo.findAll(spec);
+        allLeaves.removeIf(leave -> !employeeAccessService.canAccess(leave.getEmployee().getId(), loggedInUserId)
+                || leave.getEmployee().getId().equals(loggedInUserId));
         if(fromDate!=null){
             List<Leaves> tempLeaves = new ArrayList<>();
             for(Leaves leave : allLeaves){

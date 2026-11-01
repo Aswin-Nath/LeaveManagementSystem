@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class LeaveQuota {
-    private Integer remPaidLeaves;
+    private Integer usedPaidLeaves;
     private Integer allowedPaidLeaves;
-    public LeaveQuota(Integer remPaidLeaves, Integer allowedPaidLeaves) {
-        this.remPaidLeaves = remPaidLeaves;
+    public LeaveQuota(Integer usedPaidLeaves, Integer allowedPaidLeaves) {
+        this.usedPaidLeaves = usedPaidLeaves;
         this.allowedPaidLeaves = allowedPaidLeaves;
     }
 

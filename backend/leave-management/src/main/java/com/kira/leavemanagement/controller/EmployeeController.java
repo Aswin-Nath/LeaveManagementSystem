@@ -64,5 +64,9 @@ public class EmployeeController {
     public Integer updateLeave(@PathVariable Integer leave_id,@RequestBody Update req){
         return leaveService.EditLeave(leave_id, req.getReason(), req.getDates());
     }
+    @PutMapping("/leave/{leave_id}/withdraw")
+    public String withdrawLeave(@PathVariable Integer leave_id){
+        return leaveService.withdrawLeave(leave_id);
+    }
     
 }

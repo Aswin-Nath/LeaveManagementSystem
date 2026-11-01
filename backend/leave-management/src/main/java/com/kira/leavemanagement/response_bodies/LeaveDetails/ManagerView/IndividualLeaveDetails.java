@@ -9,6 +9,7 @@ import lombok.Data;
 import java.util.List;
 @Data
 public class IndividualLeaveDetails {
+    private Integer id;
     private String emp_name;
     private LocalDate applied_on;
     private String reason;
@@ -17,6 +18,7 @@ public class IndividualLeaveDetails {
     private String comments;
     
     public IndividualLeaveDetails(Leaves leave){
+        this.id=leave.getId();
         this.emp_name=leave.getEmployee().getName();
         this.applied_on=leave.getAppliedOn();
         this.reason=leave.getReason();

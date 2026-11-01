@@ -1,73 +1,63 @@
-# React + TypeScript + Vite
+# LeaveMate Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript, and Vite frontend for the leave-management application.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js and npm
+- Backend running on `http://localhost:8080`
 
-## React Compiler
+## First-time setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+From this directory:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The backend URL is configured in `.env`:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_BACKEND_URL=http://localhost:8080
 ```
+
+Change that value if the backend runs on another host or port. Restart Vite after changing `.env`.
+
+## Run in development
+
+```bash
+cd LeaveManagementSystem/frontend
+npm run dev
+```
+
+Open the URL printed by Vite, normally:
+
+```text
+http://localhost:5173
+```
+
+## Useful commands
+
+```bash
+npm run lint       # Check frontend code
+npm run build      # Type-check and create production build
+npm run preview    # Preview the production build
+```
+
+## Troubleshooting
+
+### `npm start` does not work
+
+This project uses Vite. Use `npm run dev`, not `npm start`.
+
+### `Failed to fetch`
+
+1. Make sure the backend is running on the URL in `.env`.
+2. Check that `VITE_BACKEND_URL` does not have a trailing path.
+3. Restart the Vite process after changing `.env`.
+4. Open the browser developer console for the actual network error.
+
+### Port 5173 is already in use
+
+Vite will usually choose another available port and print it in the terminal. Open that printed URL.
+

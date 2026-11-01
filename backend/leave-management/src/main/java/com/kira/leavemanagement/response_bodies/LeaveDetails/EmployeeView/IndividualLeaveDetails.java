@@ -10,6 +10,7 @@ import java.util.List;
 
 @Data
 public class IndividualLeaveDetails {
+    private Integer id;
     private LocalDate applied_on;
     private String reason;
     private String approval_status;
@@ -17,6 +18,7 @@ public class IndividualLeaveDetails {
     private Integer approver_id;
     private String comments;
     public IndividualLeaveDetails(Leaves leave){
+        this.id=leave.getId();
         this.applied_on=leave.getAppliedOn();
         this.reason=leave.getReason();
         this.approval_status=leave.getApprovalStatus();

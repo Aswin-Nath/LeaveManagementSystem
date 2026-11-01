@@ -9,12 +9,14 @@ import lombok.Data;
 import java.util.List;
 @Data
 public class LeaveFilter {
+    private Integer id;
     private String emp_name;
     private LocalDate applied_on;
     private String reason;
     private String approval_status;
     private List<IndividualDate> dates;
     public LeaveFilter(Leaves leave){
+        this.id=leave.getId();
         this.emp_name=leave.getEmployee().getName();
         this.applied_on=leave.getAppliedOn();
         this.reason=leave.getReason();

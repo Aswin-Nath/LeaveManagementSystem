@@ -8,15 +8,15 @@ public class IndividualEmployeeDetails {
     private String name;
     private String mail;
     private String phoneNumber;
-    private Integer remPaidLeaves;
+            private Integer usedPaidLeaves;
     private Integer allowedPaidLeaves;
-    public IndividualEmployeeDetails(Integer id, String name, String mail, String phoneNumber, Integer remPaidLeaves,
+            public IndividualEmployeeDetails(Integer id, String name, String mail, String phoneNumber, Integer usedPaidLeaves,
             Integer allowedPaidLeaves) {
         this.id = id;
         this.name = name;
         this.mail = mail;
         this.phoneNumber = phoneNumber;
-        this.remPaidLeaves = remPaidLeaves;
+        this.usedPaidLeaves = usedPaidLeaves;
         this.allowedPaidLeaves = allowedPaidLeaves;
     }
 }

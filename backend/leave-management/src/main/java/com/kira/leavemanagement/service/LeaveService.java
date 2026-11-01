@@ -23,10 +23,13 @@ public class LeaveService {
     private final LeavesRepository leaveRepo;
     private final EmployeeRepository empRepo;
     private final EmployeeLeavesRepository empLeaveRepo; 
-    public LeaveService(LeavesRepository leaveRepo,EmployeeRepository empRepo,EmployeeLeavesRepository empLeaveRepo){
+    private final EmployeeAccessService employeeAccessService;
+    public LeaveService(LeavesRepository leaveRepo,EmployeeRepository empRepo,EmployeeLeavesRepository empLeaveRepo,
+            EmployeeAccessService employeeAccessService){
         this.leaveRepo=leaveRepo;
         this.empRepo = empRepo;
         this.empLeaveRepo = empLeaveRepo;
+        this.employeeAccessService = employeeAccessService;
     }
     
     public String deleteLeave(Integer leave_id){
@@ -36,6 +39,22 @@ public class LeaveService {
             throw new UnAuthorizedException("you dont have access to this");
         }
         leaveRepo.delete(leave);
+        return "SUCCESS";
+    }
+
+    public String withdrawLeave(Integer leave_id){
+        Integer loggedId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Leaves leave = leaveRepo.findById(leave_id).orElseThrow(() -> new RuntimeException("Leave not found"));
+        if (!loggedId.equals(leave.getEmployee().getId())) {
+            throw new UnAuthorizedException("Only the applicant can withdraw this leave");
+        }
+        String status = leave.getApprovalStatus();
+        if (!"PENDING".equalsIgnoreCase(status) && !"ACCEPT".equalsIgnoreCase(status)
+                && !"ACCEPTED".equalsIgnoreCase(status)) {
+            throw new RuntimeException("Only pending or accepted leave can be withdrawn");
+        }
+        leave.setApprovalStatus("WITHDRAWN");
+        leaveRepo.save(leave);
         return "SUCCESS";
     }
     public List<AllLeave> getAllLeaves(){
@@ -59,9 +78,7 @@ public class LeaveService {
         Leaves leave = leaveRepo.findById(leave_id).orElseThrow(()-> new RuntimeException("Leave doesn't exist"));
         Integer empId = leave.getEmployee().getId();
         System.out.println(leave_id+"leave_id "+loggedId+" logged_id");
-        if(!empId.equals(loggedId)){
-            throw new UnAuthorizedException("you dont have access to this");
-        }
+        employeeAccessService.requireSelfOrManagerChain(empId, loggedId);
         System.out.println("good");
         return new IndividualLeaveDetails(leave);
     }
@@ -92,24 +109,11 @@ public class LeaveService {
             LocalDate curEndDate = dates.get(dates.size()-1).getDate();
             LocalDate curStartDate = dates.get(0).getDate();
             List<Leaves> empAllLeaves = leaveRepo.findByEmployee(emp);
-                    List<LocalDate> invalidDates = new ArrayList<>();
-                    for(Leaves individualLeave:empAllLeaves){
-                        List<IndividualDate> _dates = individualLeave.getDates();
-                        String approval_status = individualLeave.getApprovalStatus();
-                        if(!approval_status.equals("REJECTED")){
-                            for(IndividualDate date : _dates){
-                                LocalDate exactDate = date.getDate();
-                                Boolean condition = exactDate.isBefore(curEndDate.plusDays(1)) && exactDate.isAfter(curStartDate.minusDays(1));
-                                if(condition){
-                                    invalidDates.add(exactDate);
-                                }
-                            }
-                        }
-                    }
+            List<LocalDate> invalidDates = overlappingDates(empAllLeaves, dates, leave_id);
             if(invalidDates.size()>0){
                 throw new RuntimeException("Days are overlapping");
             }
-            Integer remainingPaidDays = empLeave.getRemPaidLeaves();
+            Integer remainingPaidDays = empLeave.getAllowedPaidLeaves() - empLeave.getUsedPaidLeaves();
             if(paid_days>remainingPaidDays){
                 throw new RuntimeException("requested more paid days than available");
             }
@@ -134,24 +138,11 @@ public class LeaveService {
         LocalDate curStartDate = dates.get(0).getDate();
         EmployeeLeaves empLeave = empLeaveRepo.findById(emp.getId()).orElseThrow(()-> new RuntimeException("Quota not found"));
         List<Leaves> empAllLeaves = leaveRepo.findByEmployee(emp);
-        List<LocalDate> invalidDates = new ArrayList<>();
-        for(Leaves individualLeave:empAllLeaves){
-            List<IndividualDate> _dates = individualLeave.getDates();
-            String approval_status = individualLeave.getApprovalStatus();
-            if(!approval_status.equals("REJECTED")){
-                for(IndividualDate date : _dates){
-                    LocalDate exactDate = date.getDate();
-                    Boolean condition = exactDate.isBefore(curEndDate.plusDays(1)) && exactDate.isAfter(curStartDate.minusDays(1));
-                    if(condition){
-                        invalidDates.add(exactDate);
-                    }
-                }
-            }
-        }
+        List<LocalDate> invalidDates = overlappingDates(empAllLeaves, dates, null);
         if(invalidDates.size()>0){
             throw new RuntimeException("Days are overlapping");
         }
-        Integer remainingPaidDays = empLeave.getRemPaidLeaves();
+        Integer remainingPaidDays = empLeave.getAllowedPaidLeaves() - empLeave.getUsedPaidLeaves();
         if(paid_days>remainingPaidDays){
             throw new RuntimeException("requested more paid days than available");
         }
@@ -164,5 +155,20 @@ public class LeaveService {
         leave.setDates(dates);
         leaveRepo.save(leave);
         return leave.getId();
+    }
+
+    private List<LocalDate> overlappingDates(List<Leaves> existingLeaves, List<IndividualDate> requestedDates, Integer ignoredLeaveId) {
+        List<LocalDate> requested = requestedDates.stream().map(IndividualDate::getDate).toList();
+        List<LocalDate> overlaps = new ArrayList<>();
+        for (Leaves existing : existingLeaves) {
+            if (ignoredLeaveId != null && ignoredLeaveId.equals(existing.getId())) continue;
+            String status = existing.getApprovalStatus();
+            if ("REJECT".equalsIgnoreCase(status) || "REJECTED".equalsIgnoreCase(status)
+                    || "WITHDRAWN".equalsIgnoreCase(status)) continue;
+            for (IndividualDate date : existing.getDates()) {
+                if (requested.contains(date.getDate())) overlaps.add(date.getDate());
+            }
+        }
+        return overlaps;
     }
 }

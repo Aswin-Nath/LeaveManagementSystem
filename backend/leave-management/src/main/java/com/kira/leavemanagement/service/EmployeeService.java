@@ -22,13 +22,16 @@ import java.util.List;
 public class EmployeeService {
     private final EmployeeRepository empRepo;
     private final EmployeeLeavesRepository empLeaveRepo;
+    private final EmployeeAccessService employeeAccessService;
     @Autowired
     private BCryptPasswordEncoder encoder;
 
     
-    public EmployeeService(EmployeeRepository repo,EmployeeLeavesRepository empLeaveRepo){
+    public EmployeeService(EmployeeRepository repo,EmployeeLeavesRepository empLeaveRepo,
+            EmployeeAccessService employeeAccessService){
         this.empRepo=repo;
         this.empLeaveRepo=empLeaveRepo;
+        this.employeeAccessService = employeeAccessService;
     }
 
 
@@ -53,19 +56,15 @@ public class EmployeeService {
 
         Integer LoggedId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Employee emp = empRepo.findById(empId).orElseThrow(()-> new RuntimeException("No such Employee"));
-        if(!LoggedId.equals(empId)){
-            throw new UnAuthorizedException("you dont have access to this");
-        }
+        employeeAccessService.requireSelfOrManagerChain(empId, LoggedId);
         return new Info(emp);
     }
      
     public LeaveQuota getEmployeeLeaves(Integer empId){
         Integer LoggedId = (Integer) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if(!LoggedId.equals(empId)){
-            throw new UnAuthorizedException("you dont have access to this");
-        }
+        employeeAccessService.requireSelfOrManagerChain(empId, LoggedId);
         EmployeeLeaves employeeLeaves = empLeaveRepo.findById(empId).orElseThrow(()-> new RuntimeException("No such Employee"));
-        return new LeaveQuota(employeeLeaves.getAllowedPaidLeaves(),employeeLeaves.getRemPaidLeaves());
+        return new LeaveQuota(employeeLeaves.getUsedPaidLeaves(), employeeLeaves.getAllowedPaidLeaves());
     }
 
     

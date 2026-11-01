@@ -20,8 +20,8 @@ public class EmployeeLeaves {
     @Column(name="allowed_paid_leaves")
     private Integer AllowedPaidLeaves;
 
-    @Column(name="rem_paid_leaves")
-    private Integer RemPaidLeaves;
+    @Column(name="used_paid_leaves")
+    private Integer UsedPaidLeaves = 0;
 
     @OneToOne
     @MapsId
