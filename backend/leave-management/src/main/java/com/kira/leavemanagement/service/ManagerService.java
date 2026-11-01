@@ -168,7 +168,7 @@ public class ManagerService {
             spec = spec.and((root,q,cb)->cb.lessThanOrEqualTo(root.get("appliedOn"), appliedTo));
         }
         allLeaves = leaveRepo.findAll(spec);
-        allLeaves.removeIf(leave -> !employeeAccessService.canAccess(leave.getEmployee().getId(), loggedInUserId)
+        allLeaves.removeIf(leave -> !employeeAccessService.canAccess(leave.getEmployee().getId(), loggedInUserId, true)
                 || leave.getEmployee().getId().equals(loggedInUserId));
         if(fromDate!=null){
             List<Leaves> tempLeaves = new ArrayList<>();
