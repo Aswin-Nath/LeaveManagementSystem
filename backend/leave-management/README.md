@@ -53,6 +53,30 @@ To run the packaged application:
 java -jar target/leave-management-0.0.1-SNAPSHOT.jar
 ```
 
+## Run with Docker
+
+Build the image from this directory:
+
+```bash
+docker build -t leavemate-backend .
+```
+
+Run it by passing the required configuration as environment variables:
+
+```bash
+docker run --rm --name leavemate-backend \
+  -p 8080:8080 \
+  -e NEON_DB_URL="jdbc:postgresql://<host>/<database>?sslmode=require" \
+  -e NEON_DB_USER="<database-user>" \
+  -e NEON_DB_PASSWORD="<database-password>" \
+  -e JWT_SECRET="<long-random-secret>" \
+  -e ACCESS_TOKEN_LIFE="90000" \
+  -e REFRESH_TOKEN_LIFE="2592000" \
+  leavemate-backend
+```
+
+Do not copy `.env` into the image or commit real credentials. For a deployment platform, configure these values as platform environment variables/secrets instead.
+
 ## Important API areas
 
 - `/auth/login` - sign in
